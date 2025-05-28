@@ -8,15 +8,24 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain_experimental.text_splitter import SemanticChunker
+
 import streamlit as st
-# import os
+
+import os
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
 import pandas as pd
 from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import torch
+    
+import asyncio
+import sys
+
+if sys.platform == "win32" and sys.version_info >= (3, 8):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 reranker_model_name = "amberoad/bert-multilingual-passage-reranking-msmarco"
 reranker_tokenizer = AutoTokenizer.from_pretrained(reranker_model_name)
@@ -197,5 +206,5 @@ def main():
     else:
         st.info('ENTER TRANSLATION')
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
