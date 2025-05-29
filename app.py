@@ -470,7 +470,7 @@ def main():
             result = json.loads(json_str_fixed)
         except Exception:
             try:
-                # result = ast.literal_eval(json_str_fixed)
+                result = ast.literal_eval(json_str_fixed)
             except Exception as e:
                 st.error(f"Could not parse content: {e}")
                 result = {}
