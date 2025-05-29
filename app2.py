@@ -1,13 +1,13 @@
-from langchain_community.document_loaders import TextLoader
+# from langchain_community.document_loaders import TextLoader
 from langchain_chroma.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain.retrievers.multi_query import MultiQueryRetriever
-from langchain_core.prompts import PromptTemplate
+# from langchain.retrievers.multi_query import MultiQueryRetriever
+# from langchain_core.prompts import PromptTemplate
 from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from langchain_experimental.text_splitter import SemanticChunker
+# from langchain_core.output_parsers import StrOutputParser
+# from langchain_core.runnables import RunnablePassthrough
+# from langchain_experimental.text_splitter import SemanticChunker
 
 import streamlit as st
 
