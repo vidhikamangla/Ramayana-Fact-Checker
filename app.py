@@ -326,8 +326,8 @@ Given:
 
 Your Task:
 1. Determine whether the TRANSLATION is true by meaning from any verse from the 5 given of the CONTEXT, check all the 5 verses. 
-2. minor spelling mistakes are okay
-3. Minor differences in wording are acceptable, if the gist is the same. check all the 5 verses to get the gist.
+2. minor spelling mistakes (like seeta and sita are the same)
+3. Minor differences in wording are acceptable, if the overall gist of 5 verses is the same.
 4. If true, extract the exact book, chapter, and verse from the matching CONTEXT's metadata.
 5. If the translation is factually incorrect (e.g., wrong names, false claims), return false.
 
@@ -359,6 +359,7 @@ if false, return THIS JSON format strictly:
   "Verse": "<Shloka/Verse from metadata>"
 }}
 
+Hence ur final answer must Return only one JSON.
 ---
 
 CONTEXT:
