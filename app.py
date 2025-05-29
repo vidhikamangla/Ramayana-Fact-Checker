@@ -326,11 +326,12 @@ Given:
 
 Your Task:
 1. Determine whether the TRANSLATION is true by meaning from any verse from the 5 given of the CONTEXT, check all the 5 verses. 
-2. If true, extract the exact book, chapter, and verse from the matching CONTEXT's metadata.
-3. If the translation is factually incorrect (e.g., wrong names, false claims), return false.
+2. minor spelling mistakes are okay
+3. Minor differences in wording are acceptable, if the gist is the same. check all the 5 verses to get the gist.
+4. If true, extract the exact book, chapter, and verse from the matching CONTEXT's metadata.
+5. If the translation is factually incorrect (e.g., wrong names, false claims), return false.
 
-condition 1(irrelevence):
-if irrelevent names and situations are used that are not used in ANY given verse, example a random name like riya or alice etc that means it is FALSE. but minor difference in the name and minor spelling mistake is TRUE, jump to other conditions. return THIS JSON format strictly:
+if irrelevent names and situations are used that are not used in ANY given verse, return THIS JSON format strictly:
 
 {{
   "Answer": false
@@ -347,7 +348,7 @@ Respond strictly in this JSON format:
   "Verse": "<Shloka/Verse from metadata>"
 }}
 
-Return only the JSON.  
+Return only the JSON. then one line explanation why the translation is true or false by also stating what part of the verse states that our translation is true and mention that line from the verse. 
 if false, return THIS JSON format strictly:
 {{
   "Answer": false,
@@ -430,16 +431,39 @@ def main():
         print(response)
         print("🧸🧸🧸🧸")
         print(type(response))
-        print("🧸🧸🧸🧸")
+        print("🍰🍰🍰")
         json_str = response.content
         print(json_str)
-        print("🧸🧸🧸🧸")
+        print("🍰🍰🍰")
+        
         json_str_fixed = re.sub(
             r'("Reason": )([^\n"]+)', 
             lambda m: f'{m.group(1)}"{m.group(2).strip()}"', 
             json_str
         )
-        print(json_str_fixed)
+        
+        json_str_fixed = re.sub(
+            r'("Correction": )([^\n"][^\n]*)(?=\n)',  # not starting with quote, up to line end
+            lambda m: f'{m.group(1)}"{m.group(2).strip()}"',
+            json_str_fixed
+        )
+        print(json_str_fixed)   
+        print("🍰🍰🍰")
+        if '"Book"' in json_str_fixed and '"Verse"' in json_str_fixed:
+            json_str_fixed = re.sub(
+                r'("Reason":\s*"[^"]*")\s*\n(\s*"[A-Za-z]+":)', 
+                r'\1,\n\2', 
+                json_str_fixed
+            )
+        if '"Correction"' in json_str_fixed:
+            # print("Checkpoint pass.")
+            
+            json_str_fixed = re.sub(
+                r'("Correction":\s*"[^"]*")\s*\n(\s*"[A-Za-z]+":)', 
+                r'\1,\n\2', 
+                json_str_fixed
+            )
+        print(json_str_fixed)   
         print("🧸🧸🧸🧸")
         try:
             result = json.loads(json_str_fixed)
@@ -451,10 +475,19 @@ def main():
                 st.error(f"Could not parse content: {e}")
                 result = {}
         
+        print("🎁result: ",result)
         st.markdown("### Result")
         if result:
             st.markdown(f"**Answer:** {result.get('Answer', '')}")
             st.markdown(f"**Reason:** {result.get('Reason', '')}")
+            if result.get('Correction', ''):
+                st.markdown(f"**Correction:** {result.get('Correction', '')}")
+            if result.get('Book', ''):
+                st.markdown(f"**Book:** {result.get('Book', '')}")
+            if result.get('Chapter', ''):
+                st.markdown(f"**Chapter:** {result.get('Chapter', '')}")
+            if result.get('Verse', ''):
+                st.markdown(f"**Verse:** {result.get('Verse', '')}")
         else:
             st.info("No valid result to display.")
         
