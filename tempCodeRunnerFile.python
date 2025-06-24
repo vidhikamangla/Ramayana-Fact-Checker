@@ -1,0 +1,9 @@
+import nltk
+nltk.download('punkt_tab')
+from nltk import word_tokenize, pos_tag
+
+sentence = "The quick brown fox jumps over the lazy dog"
+tokens = word_tokenize(sentence)
+tags = pos_tag(tokens)
+
+print(tags)

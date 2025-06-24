@@ -1,1 +1,7 @@
 .venv/
+__pycache__/
+extracting_verses.py
+requirements.txt
+bot_log.log
+vidhika.py
+Vidhika_Mangla.py
