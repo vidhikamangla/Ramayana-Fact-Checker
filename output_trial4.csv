@@ -1,2 +1,2 @@
 ID,Statement,Prediction,Reference,Correction
-1,sita is found by king janaka while he is ploughing the field,False,"""Kishkindha Kanda (The Empire of Holy Monkeys), Chapter: 58, Verse: 22b, 23""",The original text does not describe Sita's attire.
+1,sita is found by king janaka while he is ploughing the field.,False,"""Kishkindha Kanda (The Empire of Holy Monkeys)"", Sarga/Chapter: 58, Shloka/Verse: ""22b, 23""","The translation should be corrected to reflect that Sita was taken captive by Ravana, not found by King Janaka."

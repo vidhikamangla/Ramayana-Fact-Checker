@@ -74,7 +74,7 @@ def normalize(text):
     # Normalize ellipses
     text = re.sub(r"\.{2,}", ".", text)
     # Remove punctuation at start/end if isolated
-    text = re.sub(r"^[.,\s]+|[.,\s]+$", "", text)
+    text = re.sub(r"^[.,\s]", "", text)
   
     # Replace all variants with canonical forms
     # Sort variants by length (longest first) to avoid partial replacement
@@ -135,7 +135,7 @@ def chunk_docs_by_verse(docs):
     )
     chunked_docs = []
     for doc in docs:
-        splits = splitter.split_text(normalize(doc.page_content))
+        splits = splitter.split_text(doc.page_content)
         for i, chunk in enumerate(splits):
             metadata = dict(doc.metadata)
             metadata['chunk_index'] = i
@@ -292,7 +292,7 @@ def main():
     statements = df['Statement'].tolist()
     # statements=["ba ba black sheep"]
     # statements=["Bharata accepted the throne without any longing for Ramaâ€™s return."]
-    statements= ["Sita is found by King Janaka while he is ploughing the field."]
+    statements= ["Sita is found by king janaka while he is ploughing the field."]
     print(f"Fact checking {len(statements)} verses given by user...")
     
     #looading the Ramayana vector database
