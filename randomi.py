@@ -19,6 +19,10 @@ import json
 import re
 import unicodedata
 
+from rank_bm25 import BM25Okapi
+from nltk.tokenize import word_tokenize
+import string
+
 #we are using amberroad model which is a BERT-based reranker model for semantic passage scoring
 #to get the verses that are most relevent to the translation that user inputs
 reranker_model_name = "amberoad/bert-multilingual-passage-reranking-msmarco"
@@ -41,7 +45,7 @@ import requests
 #text normalising part:
 # name aliases for eacy text processing 
 VARIANT_MAP = {
-    "rama": ["raghava", "ram", "raghunatha", "dasharathi", "ramachandra", "prince rama", "lord rama"],
+    "rama": ["raghu", "raghava", "ram", "raghunatha", "dasharathi", "ramachandra", "prince rama", "lord rama"],
     "bharata": ["bharatha", "bharat", "prince bharata"],
     "ravana": ["dashanan", "lankesh", "ravanaasura", "demon king", "demon king ravana"],
     "hanuman": ["anjaneya", "hanuma", "maruti", "pawanputra", "bajrangbali", "monkey warrior"],
@@ -113,7 +117,6 @@ def rerank_documents(query, docs, top_k=6):
 def load_excel_dataset(file_path):
     df = pd.read_excel(file_path)
     documents = []
-    print('loaded excel2')
     for _, row in df.iterrows():
         content = normalize(row['English Translation'])
         metadata = {
@@ -135,7 +138,7 @@ def chunk_docs_by_verse(docs):
     )
     chunked_docs = []
     for doc in docs:
-        splits = splitter.split_text(doc.page_content)
+        splits = splitter.split_text(normalize(doc.page_content))
         for i, chunk in enumerate(splits):
             metadata = dict(doc.metadata)
             metadata['chunk_index'] = i
@@ -158,7 +161,6 @@ def embed_excel_chunks():
         else:
             print('creating vector db')
             docs = load_excel_dataset('./valmiki_ramayana_dataset.xlsx')
-            print('loaded excel')
             chunked = chunk_docs_by_verse(docs)
             vector_db = Chroma.from_documents(
                 documents=chunked,
@@ -166,6 +168,7 @@ def embed_excel_chunks():
                 embedding=embeddings,
                 persist_directory='./chroma_store'
             )
+
             print('Embedded and stored new documents in the database')
             return vector_db
     except Exception as e:
@@ -185,9 +188,47 @@ def get_retriever(vector_db):
     print('created retriever...')
     return retriever
 
+def hybrid_retrieve(query, vector_db, bm25, chunked_docs, top_k=20, rrf_k=60):
+    # Dense retrieval
+    retriever = vector_db.as_retriever(
+        search_type="mmr",
+        search_kwargs={"k": top_k, "fetch_k": top_k*2, "lambda_mult": 0.6}
+    )
+    dense_results = retriever.invoke(query)
+
+    def find_doc_index(doc, doc_list):
+        for i, d in enumerate(doc_list):
+            if d.page_content == doc.page_content and d.metadata == doc.metadata:
+                return i
+        return -1
+
+    dense_indices = []
+    for doc in dense_results:
+        idx = find_doc_index(doc, chunked_docs)
+        if idx != -1:
+            dense_indices.append(idx)
+
+    # Sparse retrieval (BM25)
+    query_tokens = [token for token in word_tokenize(query.lower()) if token not in string.punctuation]
+    bm25_scores = bm25.get_scores(query_tokens)
+    bm25_indices = sorted(range(len(bm25_scores)), key=lambda i: bm25_scores[i], reverse=True)[:top_k]
+
+    # Reciprocal Rank Fusion (RRF)
+    def rrf_score(rank, k=rrf_k):
+        return 1.0 / (rank + k)
+
+    rrf_scores = {}
+    for rank, idx in enumerate(dense_indices):
+        rrf_scores[idx] = rrf_scores.get(idx, 0) + rrf_score(rank)
+    for rank, idx in enumerate(bm25_indices):
+        rrf_scores[idx] = rrf_scores.get(idx, 0) + rrf_score(rank)
+
+    merged_indices = sorted(rrf_scores, key=lambda i: rrf_scores[i], reverse=True)[:top_k]
+    merged_docs = [chunked_docs[i] for i in merged_indices]
+    return merged_docs
 
 #now this function prepares the LLM prompt template and it also defines the fact-checking chain
-def chatPrompt(retriever, llm):
+def chatPrompt(vector_db, bm25, chunked_docs, llm):
     try:
         template = """
 You are a fact-checker for ancient texts. Only respond in JSON format.
@@ -244,7 +285,8 @@ TRANSLATION:
         def run_chain(question):
             
             #this will retrieve relevant verse chunks for the input user's translation
-            docs = retriever.invoke(question)
+            # docs = retriever.invoke(question)
+            docs = hybrid_retrieve(question, vector_db, bm25, chunked_docs, top_k=20)
             if not docs:
                 return '{"Answer": NOT RELEVANT, "Book": "", "Chapter": "", "Verse": ""}'
 
@@ -292,19 +334,32 @@ def main():
     statements = df['Statement'].tolist()
     # statements=["ba ba black sheep"]
     # statements=["Bharata accepted the throne without any longing for Ramaâ€™s return."]
-    statements= ["Sita is found by king janaka while he is ploughing the field."]
+    # statements= ["Sita is found by king janaka while he is ploughing the field."]
     print(f"Fact checking {len(statements)} verses given by user...")
     
     #looading the Ramayana vector database
     vector_db_load = embed_excel_chunks()
+    
     if vector_db_load is None:
         print("failed to load vector data.")
         return
+    
+    docs = load_excel_dataset('./valmiki_ramayana_dataset.xlsx')
+    chunked_docs = chunk_docs_by_verse(docs)
+
+    # Build BM25 index
+    bm25_corpus = [
+        [token for token in word_tokenize(doc.page_content.lower()) if token not in string.punctuation]
+        for doc in chunked_docs
+    ]
+    bm25 = BM25Okapi(bm25_corpus)
+    
     retriever = get_retriever(vector_db_load)
     if retriever is None:
         print("failed to initialize retriever.")
         return
-    chain = chatPrompt(retriever, llm)
+    
+    chain = chatPrompt(vector_db_load, bm25, chunked_docs, llm)
     if chain is None:
         print("chain creation failed.")
         return

@@ -1,2 +1,2 @@
 ID,Statement,Prediction,Reference,Correction
-1,sita is found by king janaka while he is ploughing the field.,False,"""Book: Bala Kanda ( Book of Youth), Chapter: 66, Verse: 13b, 14a""","The correct interpretation of the verse should be that Sita was found after being consecrated in the ritual field, not necessarily while Janaka was ploughing the field."
+1,sita is found by king janaka while he is ploughing the field.,True,"""Bala Kanda"", ""Sarga/Chapter"": 66, ""Shloka/Verse"": 13b",
