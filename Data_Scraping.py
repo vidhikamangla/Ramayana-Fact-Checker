@@ -47,10 +47,11 @@
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.service import Service as ChromeService
 import pandas as pd
 import re
 import logging
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 #setting up logging for keeping a track of all the the events when this program runs
 logging.basicConfig(filename="bot_log.log",format="%(asctime)s - %(message)s",level=logging.DEBUG)
@@ -140,7 +141,7 @@ def get_sargas(driver, book):
         for chapter in chapters:
             chapter_links.append({"text": chapter.text, "href": chapter.get_attribute("href")})
         logger.info(f"-------- Extracted all the chapter links for book{book['text']}.") 
-        return chapter_links
+        return chapter_links,kanda
     except Exception as e:
         print(f'Error extracting chapter links for book {book['text']}: {e}')
 
@@ -161,6 +162,7 @@ def get_verses(ch_num,driver, chap,kanda):
         sarga = ch_num
         data=[]
         driver.get(chap["href"])
+        # element=WebDriverWait(driver, 30).until(EC.presence_of_element_located((By.CSS_SELECTOR, "p.tat"))) 
         driver.switch_to.default_content()
         driver.switch_to.frame("main")
 
@@ -209,13 +211,14 @@ def get_verses(ch_num,driver, chap,kanda):
 driver=setup_driver()
 book_links=get_kandas(driver)
 data = []
-ch_num=1
 for book in book_links:
+    ch_num=1
     chapter_links,kanda=get_sargas(driver, book)
     for chapter in chapter_links:
         verses=get_verses(ch_num,driver, chapter, kanda)
         ch_num+=1
         data+=verses
+driver.quit()
 
 # ------------------------------------------
 #Saving all scraped data to Excel
@@ -225,10 +228,3 @@ for book in book_links:
 df = pd.DataFrame(data)
 df.to_excel("valmiki_ramayana_dataset.xlsx", index=False)
 print("data scraping complete.")
-driver.quit()
-        
-        
-        
-    
-    
-

@@ -1,7 +1,7 @@
 .venv/
 __pycache__/
 extracting_verses.py
-bot_log.log
 vidhika.py
 Vidhika_Mangla.py
 tempCodeRunnerFile*
+bot_log.log
