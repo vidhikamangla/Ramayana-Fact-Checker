@@ -87,7 +87,7 @@ def normalize(text):
 #this is the function that calculates a relevance score between the user
 #input and a passage using the BERT reranker (we are using amberroad)
 def rerank_score(query, passage):
-    # query=normalize(query)
+    query=normalize(query)
     inputs = reranker_tokenizer(query, passage, return_tensors='pt', truncation=True, max_length=512)
     with torch.no_grad():
         outputs = reranker_model(**inputs)
@@ -98,7 +98,7 @@ def rerank_score(query, passage):
 #it will returning the top_k most relevant docs for which we have set the value as 6
 #so we get top 6 reranked verses
 def rerank_documents(query, docs, top_k=6):
-    # query=normalize(query)
+    query=normalize(query)
     scored = []
     for doc in docs:
         passage = doc.page_content
